@@ -1,6 +1,7 @@
 package com.usj.calendarapp
 
 import android.os.Bundle
+import android.widget.CalendarView
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
@@ -15,6 +16,13 @@ class MainActivity : AppCompatActivity() {
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
+        }
+
+        val calendarView: CalendarView = findViewById(R.id.calendarView)
+        calendarView.setOnDateChangeListener { view, year, month, dayOfMonth ->
+            // Handle date selection
+            val selectedDate = "$dayOfMonth/${month + 1}/$year"
+            // You can update your RecyclerView or perform other actions based on the selected date
         }
     }
 }
