@@ -12,7 +12,11 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.navigation.NavigationView
 import com.usj.calendarapp.adapter.AccountAdapter
+import com.usj.calendarapp.data.AppDatabase
 import com.usj.calendarapp.model.Account
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 
 class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener {
 
@@ -20,6 +24,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     private lateinit var navigationView: NavigationView
     private lateinit var accountsRecyclerView: RecyclerView
     private lateinit var accountAdapter: AccountAdapter
+    private val applicationScope = CoroutineScope(Job() + Dispatchers.Main)
 
     @SuppressLint("MissingInflatedId")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -75,8 +80,8 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     private fun getLoggedInAccounts(): List<Account> {
         // Replace with actual logic to get logged-in accounts
         return listOf(
-            Account(1, "user1", "user1@example.com", "password1"),
-            Account(2, "user2", "user2@example.com", "password2")
+            Account(1, "admin", "admin@example.com", "admin"),
+            Account(2, "default", "default@example.com", "default")
         )
     }
 }

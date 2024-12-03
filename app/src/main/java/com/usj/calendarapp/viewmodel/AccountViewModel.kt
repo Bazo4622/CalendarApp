@@ -11,14 +11,14 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
-class AccountViewModel(application: Application) : AndroidViewModel(application) {
+class AccountViewModel(application: Application, scope: CoroutineScope) : AndroidViewModel(application) {
     private val repository: AccountRepository
     val accounts: LiveData<List<Account>>
     private val viewModelJob = Job()
     private val customScope = CoroutineScope(viewModelJob + Dispatchers.Main)
 
     init {
-        val accountDao = AppDatabase.getDatabase(application).accountDao()
+        val accountDao = AppDatabase.getDatabase(application, scope).accountDao()
         repository = AccountRepository(accountDao)
         accounts = repository.getAllAccounts()
     }
