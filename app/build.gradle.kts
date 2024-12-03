@@ -51,6 +51,7 @@ dependencies {
     implementation(libs.androidx.room.runtime.android) {
         exclude(group = "org.jetbrains", module = "annotations")
     }
+    implementation("com.prolificinteractive:material-calendarview:1.4.3")
     //for google auth and calendar integrations
     implementation("com.google.oauth-client:google-oauth-client-jetty:1.23.0")
     implementation("com.google.apis:google-api-services-calendar:v3-rev305-1.23.0")

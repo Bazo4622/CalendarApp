@@ -1,0 +1,15 @@
+<resources>
+    <style name="CustomCalendarView" parent="Widget.MaterialComponents.MaterialCalendar.Day.Selected">
+        <item name="mcv_arrowColor">@color/calendar_date_unselected</item>
+        <item name="mcv_selectionColor">@color/calendar_date_selected</item>
+        <item name="mcv_dateTextAppearance">@style/CustomDateTextAppearance</item>
+    </style>
+
+    <style name="CustomDateTextAppearance" parent="TextAppearance.MaterialComponents.Body1">
+        <item name="android:textColor">@color/calendar_date_unselected</item>
+    </style>
+
+    <style name="CustomDateTextAppearanceSelected" parent="TextAppearance.MaterialComponents.Body1">
+        <item name="android:textColor">@color/calendar_date_selected</item>
+    </style>
+</resources>

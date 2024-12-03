@@ -11,17 +11,18 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
-class EventViewModel(application: Application, scope: CoroutineScope) : AndroidViewModel(application) {
+class EventViewModel(application: Application) : AndroidViewModel(application) {
     private val repository: EventRepository
-    val events: LiveData<List<Event>>
-    private val activeAccountId: Int = 1 // Example value, replace with actual logic
     private val viewModelJob = Job()
     private val customScope = CoroutineScope(viewModelJob + Dispatchers.Main)
 
     init {
-        val eventDao = AppDatabase.getDatabase(application, scope).eventDao()
+        val eventDao = AppDatabase.getDatabase(application, customScope).eventDao()
         repository = EventRepository(eventDao)
-        events = repository.getEventsByAccount(activeAccountId)
+    }
+
+    fun getEventsByDate(date: Long): LiveData<List<Event>> {
+        return repository.getEventsByDate(date)
     }
 
     fun insert(event: Event) = customScope.launch {

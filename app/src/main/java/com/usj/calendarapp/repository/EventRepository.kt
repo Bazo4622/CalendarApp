@@ -9,6 +9,10 @@ class EventRepository(private val eventDao: EventDao) {
         return eventDao.getEventsByAccount(accountId)
     }
 
+    fun getEventsByDate(date: Long): LiveData<List<Event>> {
+        return eventDao.getEventsByDate(date)
+    }
+
     suspend fun insert(event: Event) {
         eventDao.insert(event)
     }

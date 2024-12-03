@@ -11,8 +11,11 @@ import androidx.drawerlayout.widget.DrawerLayout
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.navigation.NavigationView
+import com.prolificinteractive.materialcalendarview.MaterialCalendarView
+import com.prolificinteractive.materialcalendarview.CalendarDay
+import com.prolificinteractive.materialcalendarview.DayViewDecorator
+import com.prolificinteractive.materialcalendarview.DayViewFacade
 import com.usj.calendarapp.adapter.AccountAdapter
-import com.usj.calendarapp.data.AppDatabase
 import com.usj.calendarapp.model.Account
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -24,6 +27,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     private lateinit var navigationView: NavigationView
     private lateinit var accountsRecyclerView: RecyclerView
     private lateinit var accountAdapter: AccountAdapter
+    private lateinit var calendarView: MaterialCalendarView
     private val applicationScope = CoroutineScope(Job() + Dispatchers.Main)
 
     @SuppressLint("MissingInflatedId")
@@ -34,6 +38,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         drawerLayout = findViewById(R.id.drawerLayout)
         navigationView = findViewById(R.id.navigationView)
         accountsRecyclerView = findViewById(R.id.accountsRecyclerView)
+        calendarView = findViewById(R.id.calendarView)
 
         val toggle = ActionBarDrawerToggle(
             this, drawerLayout, R.string.navigation_drawer_open, R.string.navigation_drawer_close
@@ -56,6 +61,30 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
         findViewById<Button>(R.id.signUpButton).setOnClickListener {
             // Handle sign up button click
+        }
+
+        calendarView.setOnDateChangedListener { widget, date, selected ->
+            widget.removeDecorators()
+            widget.addDecorator(object : DayViewDecorator {
+                override fun shouldDecorate(day: CalendarDay): Boolean {
+                    return day == date
+                }
+
+                override fun decorate(view: DayViewFacade) {
+                    if (selected) {
+                        view.setBackgroundDrawable(getDrawable(R.drawable.selected_date_background) ?: return)
+                        view.addSpan { textPaint: android.text.TextPaint ->
+                            textPaint.color = getColor(R.color.calendar_date_selected)
+                        }
+                    } else {
+                        view.setBackgroundDrawable(getDrawable(R.drawable.transparent_background) ?: return)
+                        view.addSpan { textPaint: android.text.TextPaint ->
+                            textPaint.color = getColor(R.color.calendar_date_unselected)
+                        }
+                    }
+                }
+            })
+            widget.invalidateDecorators()
         }
     }
 
