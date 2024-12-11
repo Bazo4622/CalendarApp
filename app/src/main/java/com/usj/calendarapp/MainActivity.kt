@@ -11,6 +11,10 @@ import androidx.drawerlayout.widget.DrawerLayout
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.navigation.NavigationView
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
 import com.prolificinteractive.materialcalendarview.MaterialCalendarView
 import com.prolificinteractive.materialcalendarview.CalendarDay
 import com.prolificinteractive.materialcalendarview.DayViewDecorator
@@ -110,10 +114,25 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     }
 
     private fun getLoggedInAccounts(): List<Account> {
-        // Replace with actual logic to get logged-in accounts
-        return listOf(
-            Account(1, "admin", "admin@example.com", "admin"),
-            Account(2, "default", "default@example.com", "default")
-        )
+        val accountsList = mutableListOf<Account>()
+        val database = FirebaseDatabase.getInstance()
+        val accountsRef = database.getReference("accounts")
+
+        accountsRef.addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                for (accountSnapshot in snapshot.children) {
+                    val account = accountSnapshot.getValue(Account::class.java)
+                    if (account != null && account.id != 1) {
+                        accountsList.add(account)
+                    }
+                }
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                // Handle error
+            }
+        })
+
+        return accountsList
     }
 }
