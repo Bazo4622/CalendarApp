@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     id("kotlin-kapt")
+    alias(libs.plugins.google.gms.google.services)
 }
 
 android {
@@ -63,6 +64,9 @@ dependencies {
     }
     //so that we can easily control permissions
     implementation("pub.devrel:easypermissions:3.0.0")
+    implementation(libs.firebase.database.ktx)
+    implementation(libs.firebase.common.ktx)
+    implementation(libs.firebase.auth)
 }
 
 configurations.all {

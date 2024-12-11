@@ -19,10 +19,7 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             android:paddingTop="16dp"
-            android:paddingBottom="16dp"
-            app:mcv_arrowColor="@color/calendar_date_unselected"
-            app:mcv_selectionColor="@color/calendar_date_selected"
-            app:mcv_dateTextAppearance="@style/CustomDateTextAppearance"/>
+            android:paddingBottom="16dp"/>
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recyclerView"
