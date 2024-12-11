@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "997867653677",
+    "firebase_url": "https://calendarapp-6d810-default-rtdb.europe-west1.firebasedatabase.app",
+    "project_id": "calendarapp-6d810",
+    "storage_bucket": "calendarapp-6d810.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:997867653677:android:a2325d971c78c684b7c6a4",
+        "android_client_info": {
+          "package_name": "com.usj.calendarapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAYabO30udYgXX7WOBH64-fRALyaBNtaGA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
