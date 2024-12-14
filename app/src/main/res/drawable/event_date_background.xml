@@ -1,5 +1,4 @@
-<!-- res/drawable/selected_date_background.xml -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android">
-    <solid android:color="#6B6B6B"/>
+    <solid android:color="#FFBB00"/>
     <corners android:radius="4dp"/>
 </shape>

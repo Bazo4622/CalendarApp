@@ -6,10 +6,12 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import com.google.firebase.database.FirebaseDatabase
+import com.usj.calendarapp.MainActivity
 import com.usj.calendarapp.R
 import com.usj.calendarapp.model.Account
 
-class AccountAdapter(private val accounts: List<Account>) : RecyclerView.Adapter<AccountAdapter.AccountViewHolder>() {
+class AccountAdapter(private var accounts: List<Account>, private val mainActivity: MainActivity) : RecyclerView.Adapter<AccountAdapter.AccountViewHolder>() {
 
     class AccountViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val username: TextView = itemView.findViewById(R.id.username)
@@ -25,9 +27,22 @@ class AccountAdapter(private val accounts: List<Account>) : RecyclerView.Adapter
         val currentAccount = accounts[position]
         holder.username.text = currentAccount.username
         holder.logoutButton.setOnClickListener {
-            // Handle logout button click
+            logoutAccount(currentAccount)
         }
     }
 
     override fun getItemCount() = accounts.size
+
+    fun updateAccounts(newAccounts: List<Account>) {
+        accounts = newAccounts
+        notifyDataSetChanged()
+    }
+
+    private fun logoutAccount(account: Account) {
+        val database = FirebaseDatabase.getInstance()
+        val accountsRef = database.getReference("accounts")
+        accountsRef.child(account.id.toString()).child("loggedIn").setValue(false).addOnCompleteListener {
+            mainActivity.refreshAccountsList()
+        }
+    }
 }
