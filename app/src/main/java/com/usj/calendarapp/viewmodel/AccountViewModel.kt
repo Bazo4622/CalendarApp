@@ -3,32 +3,39 @@ package com.usj.calendarapp.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
-import com.usj.calendarapp.data.AppDatabase
+import androidx.lifecycle.MutableLiveData
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
 import com.usj.calendarapp.model.Account
-import com.usj.calendarapp.repository.AccountRepository
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.launch
 
 class AccountViewModel(application: Application) : AndroidViewModel(application) {
-    private val repository: AccountRepository
-    val accounts: LiveData<List<Account>>
-    private val viewModelJob = Job()
-    private val customScope = CoroutineScope(viewModelJob + Dispatchers.Main)
+    private val _accounts = MutableLiveData<List<Account>>()
+    val accounts: LiveData<List<Account>> get() = _accounts
 
     init {
-        val accountDao = AppDatabase.getDatabase(application).accountDao()
-        repository = AccountRepository(accountDao)
-        accounts = repository.getAllAccounts()
+        fetchAccountsFromFirebase()
     }
 
-    fun insert(account: Account) = customScope.launch {
-        repository.insert(account)
-    }
+    private fun fetchAccountsFromFirebase() {
+        val database = FirebaseDatabase.getInstance()
+        val accountsRef = database.getReference("accounts")
+        accountsRef.addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val accountsList = mutableListOf<Account>()
+                for (accountSnapshot in snapshot.children) {
+                    val account = accountSnapshot.getValue(Account::class.java)
+                    if (account != null) {
+                        accountsList.add(account)
+                    }
+                }
+                _accounts.value = accountsList
+            }
 
-    override fun onCleared() {
-        super.onCleared()
-        viewModelJob.cancel()
+            override fun onCancelled(error: DatabaseError) {
+                // Handle error
+            }
+        })
     }
 }

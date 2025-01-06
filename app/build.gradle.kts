@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     id("kotlin-kapt")
+    alias(libs.plugins.google.gms.google.services)
 }
 
 android {
@@ -10,7 +11,7 @@ android {
 
     defaultConfig {
         applicationId = "com.usj.calendarapp"
-        minSdk = 24
+        minSdk = 26
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
@@ -42,15 +43,21 @@ dependencies {
     implementation(libs.material)
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
-    implementation(libs.androidx.room.common){
-        exclude(group = "org.jetbrains", module = "annotations")
+    implementation("com.prolificinteractive:material-calendarview:1.4.3")
+    //for google auth and calendar integrations
+    implementation("com.google.oauth-client:google-oauth-client-jetty:1.23.0")
+    implementation("com.google.apis:google-api-services-calendar:v3-rev305-1.23.0")
+    implementation("com.google.android.gms:play-services-auth:20.4.0")
+    //to avoid conflicts in libraries
+    implementation("com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava")
+    implementation("com.google.api-client:google-api-client-android:1.23.0") {
+        exclude(group = "org.apache.httpcomponents")
     }
-    implementation(libs.androidx.room.ktx){
-        exclude(group = "org.jetbrains", module = "annotations")
-    }
-    implementation(libs.androidx.room.runtime.android) {
-        exclude(group = "org.jetbrains", module = "annotations")
-    }
+    //so that we can easily control permissions
+    implementation("pub.devrel:easypermissions:3.0.0")
+    implementation(libs.firebase.database.ktx)
+    implementation(libs.firebase.common.ktx)
+    implementation(libs.firebase.auth)
 }
 
 configurations.all {

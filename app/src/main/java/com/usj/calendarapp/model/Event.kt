@@ -1,14 +1,14 @@
 package com.usj.calendarapp.model
 
-import androidx.room.Entity
-import androidx.room.PrimaryKey
-
-@Entity(tableName = "events")
 data class Event(
-    @PrimaryKey(autoGenerate = true) val id: Int = 0,
-    val title: String,
-    val description: String,
-    val date: Long,
-    val time: Long,
-    val accountId: Int
-)
+    val id: Int = 0,
+    val title: String = "",
+    val description: String = "",
+    val date: Long = 0L,
+    val time: Long = 0L,
+    val accountId: Int = 0,
+    val repeating: Boolean = false
+) {
+    // No-argument constructor for Firebase
+    constructor() : this(0, "", "", 0L, 0L, 0, false)
+}

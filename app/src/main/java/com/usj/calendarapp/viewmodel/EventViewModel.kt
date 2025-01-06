@@ -3,33 +3,35 @@ package com.usj.calendarapp.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
-import com.usj.calendarapp.data.AppDatabase
+import androidx.lifecycle.MutableLiveData
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
 import com.usj.calendarapp.model.Event
-import com.usj.calendarapp.repository.EventRepository
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.launch
 
 class EventViewModel(application: Application) : AndroidViewModel(application) {
-    private val repository: EventRepository
-    val events: LiveData<List<Event>>
-    private val activeAccountId: Int = 1 // Example value, replace with actual logic
-    private val viewModelJob = Job()
-    private val customScope = CoroutineScope(viewModelJob + Dispatchers.Main)
+    private val _events = MutableLiveData<List<Event>>()
+    val events: LiveData<List<Event>> get() = _events
 
-    init {
-        val eventDao = AppDatabase.getDatabase(application).eventDao()
-        repository = EventRepository(eventDao)
-        events = repository.getEventsByAccount(activeAccountId)
-    }
+    fun fetchEventsByDate(date: Long) {
+        val database = FirebaseDatabase.getInstance()
+        val eventsRef = database.getReference("events")
+        eventsRef.orderByChild("date").equalTo(date.toDouble()).addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val eventsList = mutableListOf<Event>()
+                for (eventSnapshot in snapshot.children) {
+                    val event = eventSnapshot.getValue(Event::class.java)
+                    if (event != null) {
+                        eventsList.add(event)
+                    }
+                }
+                _events.value = eventsList
+            }
 
-    fun insert(event: Event) = customScope.launch {
-        repository.insert(event)
-    }
-
-    override fun onCleared() {
-        super.onCleared()
-        viewModelJob.cancel()
+            override fun onCancelled(error: DatabaseError) {
+                // Handle error
+            }
+        })
     }
 }
