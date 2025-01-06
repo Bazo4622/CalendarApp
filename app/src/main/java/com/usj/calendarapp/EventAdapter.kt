@@ -1,17 +1,21 @@
 package com.usj.calendarapp.adapter
 
+import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-import com.google.firebase.Timestamp
 import com.usj.calendarapp.R
 import com.usj.calendarapp.model.Event
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
+import java.util.Locale
 
-class EventAdapter(private var events: List<Event>) : RecyclerView.Adapter<EventAdapter.EventViewHolder>() {
+class EventAdapter(private var events: List<Event>, private val accountMap: Map<Int, String>, itemEventEdit: Int) : RecyclerView.Adapter<EventAdapter.EventViewHolder>() {
+
+    private var selectedEvent: Event? = null
 
     class EventViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val eventName: TextView = itemView.findViewById(R.id.eventName)
@@ -29,12 +33,29 @@ class EventAdapter(private var events: List<Event>) : RecyclerView.Adapter<Event
         val currentEvent = events[position]
         holder.eventName.text = currentEvent.title
 
+        val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+        val timeFormat = SimpleDateFormat("HH:mm z", Locale.getDefault())
+
         val date = Date(currentEvent.date)
-        val format = SimpleDateFormat("dd/MM/yyyy HH:mm")
-        holder.eventDate.text = format.format(date)
+        val time = Date(currentEvent.time)
+
+        holder.eventDate.text = "${dateFormat.format(date)} ${timeFormat.format(time)}"
         holder.eventDescription.text = currentEvent.description
-        holder.accountName.text = currentEvent.accountId.toString()
+        holder.accountName.text = accountMap[currentEvent.accountId] ?: currentEvent.accountId.toString()
+
+        holder.itemView.setOnClickListener {
+            selectedEvent = currentEvent
+            notifyDataSetChanged()
+        }
+
+        if (selectedEvent == currentEvent) {
+            holder.itemView.setBackgroundColor(Color.GRAY)
+        } else {
+            holder.itemView.setBackgroundColor(Color.TRANSPARENT)
+        }
     }
+
+    fun getSelectedEvent(): Event? = selectedEvent
 
     override fun getItemCount() = events.size
 
