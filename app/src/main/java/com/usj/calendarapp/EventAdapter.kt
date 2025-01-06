@@ -8,9 +8,12 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.usj.calendarapp.R
 import com.usj.calendarapp.model.Event
+import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
+import java.util.Locale
 
-class EventAdapter(private var events: List<Event>, itemEventEdit: Int) : RecyclerView.Adapter<EventAdapter.EventViewHolder>() {
+class EventAdapter(private var events: List<Event>, private val accountMap: Map<Int, String>, itemEventEdit: Int) : RecyclerView.Adapter<EventAdapter.EventViewHolder>() {
 
     private var selectedEvent: Event? = null
 
@@ -29,9 +32,16 @@ class EventAdapter(private var events: List<Event>, itemEventEdit: Int) : Recycl
     override fun onBindViewHolder(holder: EventViewHolder, position: Int) {
         val currentEvent = events[position]
         holder.eventName.text = currentEvent.title
-        holder.eventDate.text = Date(currentEvent.date).toString()
+
+        val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+        val timeFormat = SimpleDateFormat("HH:mm z", Locale.getDefault())
+
+        val date = Date(currentEvent.date)
+        val time = Date(currentEvent.time)
+
+        holder.eventDate.text = "${dateFormat.format(date)} ${timeFormat.format(time)}"
         holder.eventDescription.text = currentEvent.description
-        holder.accountName.text = currentEvent.accountId.toString() // Update this to show the account name if available
+        holder.accountName.text = accountMap[currentEvent.accountId] ?: currentEvent.accountId.toString()
 
         holder.itemView.setOnClickListener {
             selectedEvent = currentEvent

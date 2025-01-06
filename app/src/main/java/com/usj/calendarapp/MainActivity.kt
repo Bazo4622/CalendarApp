@@ -1,16 +1,21 @@
 package com.usj.calendarapp
 
 import android.annotation.SuppressLint
+import android.app.DatePickerDialog
+import android.app.TimePickerDialog
 import android.content.Context
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.MenuItem
+import android.view.View
 import android.widget.Button
+import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.Toast
 import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.material3.DatePickerDialog
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -44,6 +49,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     private val applicationScope = CoroutineScope(Job() + Dispatchers.Main)
     private val eventsList = mutableListOf<Event>()
     private val markedDates = mutableSetOf<CalendarDay>()
+    private val accountMap = mutableMapOf<Int, String>()
 
     @SuppressLint("MissingInflatedId")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -71,12 +77,12 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
         accountsRecyclerView.layoutManager = LinearLayoutManager(this)
         getLoggedInAccounts { accounts ->
-            accountAdapter = AccountAdapter(accounts)
+            accountAdapter = AccountAdapter(accounts, R.layout.item_account)
             accountsRecyclerView.adapter = accountAdapter
         }
 
         eventsRecyclerView.layoutManager = LinearLayoutManager(this)
-        eventAdapter = EventAdapter(emptyList(), R.layout.item_event_edit)
+        eventAdapter = EventAdapter(emptyList(), accountMap, R.layout.item_event_edit)
         eventsRecyclerView.adapter = eventAdapter
 
         findViewById<Button>(R.id.loginButton).setOnClickListener {
@@ -93,6 +99,29 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         manageEventsButton.setOnClickListener {
             showManageEventsDialog()
         }
+
+        fetchAccountDetails()
+    }
+
+    private fun fetchAccountDetails() {
+        val database = FirebaseDatabase.getInstance()
+        val accountsRef = database.getReference("accounts")
+
+        accountsRef.addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                for (accountSnapshot in snapshot.children) {
+                    val account = accountSnapshot.getValue(Account::class.java)
+                    if (account != null) {
+                        accountMap[account.id] = account.username
+                    }
+                }
+                eventAdapter.notifyDataSetChanged() // Refresh the event adapter
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                // Handle error
+            }
+        })
     }
 
     private fun fetchEventsOfLoggedInAccounts() {
@@ -429,55 +458,62 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     }
 
     private fun showAddEventDialog() {
-        val dialogView = layoutInflater.inflate(R.layout.add_event, null)
-        val dialog = AlertDialog.Builder(this)
-            .setView(dialogView)
-            .create()
+        showSelectAccountDialog { account ->
+            val dialogView = layoutInflater.inflate(R.layout.add_event, null)
+            val dialog = AlertDialog.Builder(this)
+                .setView(dialogView)
+                .create()
 
-        val eventTitleEditText = dialogView.findViewById<EditText>(R.id.eventTitleEditText)
-        val eventDescriptionEditText =
-            dialogView.findViewById<EditText>(R.id.eventDescriptionEditText)
-        val eventDateEditText = dialogView.findViewById<EditText>(R.id.eventDateEditText)
-        val eventTimeEditText = dialogView.findViewById<EditText>(R.id.eventTimeEditText)
+            val eventTitleEditText = dialogView.findViewById<EditText>(R.id.eventTitleEditText)
+            val eventDescriptionEditText = dialogView.findViewById<EditText>(R.id.eventDescriptionEditText)
+            val eventDateButton = dialogView.findViewById<Button>(R.id.eventDateButton)
+            val eventTimeButton = dialogView.findViewById<Button>(R.id.eventTimeButton)
+            val eventRepeatingCheckBox = dialogView.findViewById<CheckBox>(R.id.eventRepeatingCheckBox)
 
-        dialogView.findViewById<Button>(R.id.saveEventButton).setOnClickListener {
-            val title = eventTitleEditText.text.toString().trim()
-            val description = eventDescriptionEditText.text.toString().trim()
-            val date = eventDateEditText.text.toString().trim()
-            val time = eventTimeEditText.text.toString().trim()
+            var selectedDate: Long = 0
+            var selectedTime: Long = 0
 
-            if (title.isEmpty() || description.isEmpty() || date.isEmpty() || time.isEmpty()) {
-                Toast.makeText(this, "All fields are required", Toast.LENGTH_SHORT).show()
-            } else {
-                // Save the event to Firebase
-                saveEvent(title, description, date, time)
+            eventDateButton.setOnClickListener {
+                val calendar = Calendar.getInstance()
+                val datePickerDialog = DatePickerDialog(this, { _, year, month, dayOfMonth ->
+                    calendar.set(year, month, dayOfMonth)
+                    selectedDate = calendar.timeInMillis
+                    eventDateButton.text = Date(selectedDate).toString()
+                }, calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH))
+                datePickerDialog.show()
+            }
+
+            eventTimeButton.setOnClickListener {
+                val calendar = Calendar.getInstance()
+                val timePickerDialog = TimePickerDialog(this, { _, hourOfDay, minute ->
+                    calendar.set(Calendar.HOUR_OF_DAY, hourOfDay)
+                    calendar.set(Calendar.MINUTE, minute)
+                    selectedTime = calendar.timeInMillis
+                    eventTimeButton.text = Date(selectedTime).toString()
+                }, calendar.get(Calendar.HOUR_OF_DAY), calendar.get(Calendar.MINUTE), true)
+                timePickerDialog.show()
+            }
+
+            dialogView.findViewById<Button>(R.id.saveEventButton).setOnClickListener {
+                val title = eventTitleEditText.text.toString().trim()
+                val description = eventDescriptionEditText.text.toString().trim()
+                val repeating = eventRepeatingCheckBox.isChecked
+
+                if (title.isEmpty() || description.isEmpty() || selectedDate == 0L || selectedTime == 0L) {
+                    Toast.makeText(this, "Please fill all fields", Toast.LENGTH_SHORT).show()
+                } else {
+                    saveEvent(title, description,
+                        selectedDate.toString(), selectedTime.toString(), account.id, repeating)
+                    dialog.dismiss()
+                }
+            }
+
+            dialogView.findViewById<Button>(R.id.cancelButton).setOnClickListener {
                 dialog.dismiss()
             }
+
+            dialog.show()
         }
-
-        dialogView.findViewById<Button>(R.id.cancelButton).setOnClickListener {
-            dialog.dismiss()
-        }
-
-        dialog.show()
-    }
-
-    private fun saveEvent(title: String, description: String, date: String, time: String) {
-        val database = FirebaseDatabase.getInstance()
-        val eventsRef = database.getReference("events")
-
-        val newEventId = eventsRef.push().key ?: return
-        val newEvent = Event(
-            id = newEventId.hashCode(), // Ensure unique ID
-            title = title,
-            description = description,
-            date = date.toLong(),
-            time = time.toLong(),
-            accountId = 0,
-            repeating = false
-        )
-        eventsRef.child(newEventId).setValue(newEvent)
-        Toast.makeText(this, "Event added successfully", Toast.LENGTH_SHORT).show()
     }
 
     private fun showSelectAccountDialog(onAccountSelected: (Account) -> Unit) {
@@ -490,7 +526,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         accountsRecyclerView.layoutManager = LinearLayoutManager(this)
 
         getLoggedInAccounts { accounts ->
-            val accountAdapter = AccountAdapter(accounts)
+            val accountAdapter = AccountAdapter(accounts, R.layout.item_account_select)
             accountsRecyclerView.adapter = accountAdapter
 
             dialogView.findViewById<Button>(R.id.nextButton).setOnClickListener {
@@ -501,6 +537,10 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 } else {
                     Toast.makeText(this, "Please select an account", Toast.LENGTH_SHORT).show()
                 }
+            }
+
+            dialogView.findViewById<Button>(R.id.cancelButton).setOnClickListener {
+                dialog.dismiss()
             }
 
             dialog.show()
@@ -518,7 +558,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
         getEventsForAccount(account) { events ->
             val layoutId = if (isDelete) R.layout.item_event_delete else R.layout.item_event_edit
-            val eventAdapter = EventAdapter(events, layoutId)
+            val eventAdapter = EventAdapter(events, accountMap, layoutId)
             eventsRecyclerView.adapter = eventAdapter
 
             dialogView.findViewById<Button>(R.id.nextButton).setOnClickListener {
@@ -529,6 +569,10 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 } else {
                     Toast.makeText(this, "Please select an event", Toast.LENGTH_SHORT).show()
                 }
+            }
+
+            dialogView.findViewById<Button>(R.id.cancelButton).setOnClickListener {
+                dialog.dismiss()
             }
 
             dialog.show()
@@ -542,27 +586,50 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             .create()
 
         val eventTitleEditText = dialogView.findViewById<EditText>(R.id.eventTitleEditText)
-        val eventDescriptionEditText =
-            dialogView.findViewById<EditText>(R.id.eventDescriptionEditText)
-        val eventDateEditText = dialogView.findViewById<EditText>(R.id.eventDateEditText)
-        val eventTimeEditText = dialogView.findViewById<EditText>(R.id.eventTimeEditText)
+        val eventDescriptionEditText = dialogView.findViewById<EditText>(R.id.eventDescriptionEditText)
+        val eventDateButton = dialogView.findViewById<Button>(R.id.eventDateButton)
+        val eventTimeButton = dialogView.findViewById<Button>(R.id.eventTimeButton)
+        val eventRepeatingCheckBox = dialogView.findViewById<CheckBox>(R.id.eventRepeatingCheckBox)
 
         eventTitleEditText.setText(event.title)
         eventDescriptionEditText.setText(event.description)
-        eventDateEditText.setText(event.date.toString())
-        eventTimeEditText.setText(event.time.toString())
+        eventDateButton.text = Date(event.date).toString()
+        eventTimeButton.text = Date(event.time).toString()
+        eventRepeatingCheckBox.isChecked = event.repeating
+
+        var selectedDate = event.date
+        var selectedTime = event.time
+
+        eventDateButton.setOnClickListener {
+            val calendar = Calendar.getInstance()
+            val datePickerDialog = DatePickerDialog(this, { _, year, month, dayOfMonth ->
+                calendar.set(year, month, dayOfMonth)
+                selectedDate = calendar.timeInMillis
+                eventDateButton.text = Date(selectedDate).toString()
+            }, calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH))
+            datePickerDialog.show()
+        }
+
+        eventTimeButton.setOnClickListener {
+            val calendar = Calendar.getInstance()
+            val timePickerDialog = TimePickerDialog(this, { _, hourOfDay, minute ->
+                calendar.set(Calendar.HOUR_OF_DAY, hourOfDay)
+                calendar.set(Calendar.MINUTE, minute)
+                selectedTime = calendar.timeInMillis
+                eventTimeButton.text = Date(selectedTime).toString()
+            }, calendar.get(Calendar.HOUR_OF_DAY), calendar.get(Calendar.MINUTE), true)
+            timePickerDialog.show()
+        }
 
         dialogView.findViewById<Button>(R.id.saveEventButton).setOnClickListener {
             val title = eventTitleEditText.text.toString().trim()
             val description = eventDescriptionEditText.text.toString().trim()
-            val date = eventDateEditText.text.toString().trim()
-            val time = eventTimeEditText.text.toString().trim()
+            val repeating = eventRepeatingCheckBox.isChecked
 
-            if (title.isEmpty() || description.isEmpty() || date.isEmpty() || time.isEmpty()) {
-                Toast.makeText(this, "All fields are required", Toast.LENGTH_SHORT).show()
+            if (title.isEmpty() || description.isEmpty() || selectedDate == 0L || selectedTime == 0L) {
+                Toast.makeText(this, "Please fill all fields", Toast.LENGTH_SHORT).show()
             } else {
-                // Update the event in Firebase
-                updateEvent(event.id, title, description, date, time)
+                updateEvent(event.id, title, description, selectedDate, selectedTime, event.accountId, repeating)
                 dialog.dismiss()
             }
         }
@@ -574,7 +641,39 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         dialog.show()
     }
 
-    private fun updateEvent(eventId: Int, title: String, description: String, date: String, time: String) {
+    private fun saveEvent(title: String, description: String, date: String, time: String, accountId: Int, repeating: Boolean) {
+        val database = FirebaseDatabase.getInstance()
+        val eventsRef = database.getReference("events")
+
+        eventsRef.addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val existingEventIds = snapshot.children.mapNotNull { it.key }
+                    .filter { !it.contains("_") }
+                    .map { it.toIntOrNull() }
+                    .filterNotNull()
+                val newEventId = (existingEventIds.maxOrNull() ?: 0) + 1
+
+                val newEvent = Event(
+                    id = newEventId,
+                    title = title,
+                    description = description,
+                    date = date.toLong(),
+                    time = time.toLong(),
+                    accountId = accountId,
+                    repeating = repeating
+                )
+                eventsRef.child(newEventId.toString()).setValue(newEvent)
+                Toast.makeText(this@MainActivity, "Event added successfully", Toast.LENGTH_SHORT).show()
+                fetchEventsOfLoggedInAccounts() // Refresh calendar
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                Toast.makeText(this@MainActivity, "Failed to add event", Toast.LENGTH_SHORT).show()
+            }
+        })
+    }
+
+    private fun updateEvent(eventId: Int, title: String, description: String, date: Long, time: Long, accountId: Int, repeating: Boolean) {
         val database = FirebaseDatabase.getInstance()
         val eventsRef = database.getReference("events").child(eventId.toString())
 
@@ -582,13 +681,19 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             id = eventId,
             title = title,
             description = description,
-            date = date.toLong(),
-            time = time.toLong(),
-            accountId = 0,
-            repeating = false
+            date = date,
+            time = time,
+            accountId = accountId,
+            repeating = repeating
         )
-        eventsRef.setValue(updatedEvent)
-        Toast.makeText(this, "Event updated successfully", Toast.LENGTH_SHORT).show()
+        eventsRef.setValue(updatedEvent).addOnCompleteListener { task ->
+            if (task.isSuccessful) {
+                Toast.makeText(this, "Event updated successfully", Toast.LENGTH_SHORT).show()
+                fetchEventsOfLoggedInAccounts() // Refresh calendar
+            } else {
+                Toast.makeText(this, "Failed to update event", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
     private fun deleteEvent(eventId: Int) {
@@ -597,6 +702,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
         eventsRef.removeValue()
         Toast.makeText(this, "Event deleted successfully", Toast.LENGTH_SHORT).show()
+        fetchEventsOfLoggedInAccounts() // Refresh calendar
     }
 
     private fun getEventsForAccount(account: Account, callback: (List<Event>) -> Unit) {

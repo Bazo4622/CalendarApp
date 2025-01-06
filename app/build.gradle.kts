@@ -58,6 +58,7 @@ dependencies {
     implementation(libs.firebase.database.ktx)
     implementation(libs.firebase.common.ktx)
     implementation(libs.firebase.auth)
+    implementation(libs.androidx.material3.android)
 }
 
 configurations.all {
